@@ -67,7 +67,8 @@
 			header: true,
 			complete: function (results) {
 			  // Access parsed CSV data for boys in results.data
-			  console.log('Boys CSV Data:', results.data);
+			const boysData = results.data;
+			processData(boysData, 'Male');
 			  // Perform calculations or processing specific to boys' data
 			  // Update the display section or perform other necessary tasks
 			}
@@ -80,12 +81,176 @@
 			header: true,
 			complete: function (results) {
 			  // Access parsed CSV data for girls in results.data
-			  console.log('Girls CSV Data:', results.data);
+			const girlsData = results.data;
+			processData(girlsData, 'Female');
 			  // Perform calculations or processing specific to girls' data
 			  // Update the display section or perform other necessary tasks
 			}
 		  });
 	  }
+	  
+		// Process data for boys and girls
+		function processData(data, gender) {
+		  // Filter out rows with "DSF," "DNF," or "DSQ" in the Run columns
+		  const filteredData = data.filter(row => !['DSF', 'DNF', 'DSQ'].includes(row['Run']));
+
+		  // Separate data by gender
+		  const genderData = filteredData.filter(row => row['Gender'] === gender);
+
+		  // Calculate points based on the lowest combined times
+		  const points = calculatePoints(genderData);
+
+		  // Form teams based on clubs and athlete points
+		  const teams = formTeams(genderData);
+
+		  // Display the results in the '#teamRankings' section
+		  displayResults(teams);
+		}
+
+		// Calculate points based on the lowest combined times
+		function calculatePoints(data) {
+		  // Implement logic to calculate points
+		  // Assign points to athletes based on their times
+		  // Return the points for further processing
+		}
+		
+		// Form teams based on clubs and athlete points
+		function formTeams(data) {
+		  // Implement logic to form teams
+		  // Select top athletes from each club with at least 2 athletes of each gender
+		  // Calculate team scores based on the points of selected athletes
+		  // Return the formed teams with rankings and scores
+			const clubs = {}; // Object to store club-wise data
+
+			  // Organize data by clubs
+			  data.forEach(row => {
+				const club = row['Club'];
+				if (!clubs[club]) {
+				  clubs[club] = [];
+				}
+				clubs[club].push(row);
+			  });
+
+			  // Calculate points for each athlete and assign to clubs
+			  Object.keys(clubs).forEach(club => {
+				clubs[club].forEach(row => {
+				  row.points = calculatePointsForRow(row);
+				});
+
+				// Sort athletes in each club based on points
+				clubs[club].sort((a, b) => b.points - a.points);
+			  });
+
+			  // Form teams based on sorted athlete lists for each club
+			  const teams = [];
+			  Object.keys(clubs).forEach(club => {
+				const clubAthletes = clubs[club];
+				const team = {
+				  name: club,
+				  athletes: [],
+				  totalPoints: 0
+				};
+
+				let maleCount = 0;
+				let femaleCount = 0;
+
+				// Select top athletes with gender balance (at least 2 athletes of each gender)
+				clubAthletes.forEach(athlete => {
+				  if (athlete['Gender'] === 'Male' && maleCount < 2) {
+					team.athletes.push(athlete);
+					team.totalPoints += athlete.points;
+					maleCount++;
+				  } else if (athlete['Gender'] === 'Female' && femaleCount < 2) {
+					team.athletes.push(athlete);
+					team.totalPoints += athlete.points;
+					femaleCount++;
+				  }
+				});
+
+				teams.push(team);
+			  });
+
+			  // Sort teams based on total points
+			  teams.sort((a, b) => b.totalPoints - a.totalPoints);
+
+			  return teams;
+
+			// // Sort teams based on total points (continued)
+			// teams.sort((a, b) => b.totalPoints - a.totalPoints);
+
+			// // Refinements or additional logic as needed
+			// teams.forEach(team => {
+			// 	if (team.athletes.length < 2) {
+			// 	team.totalPoints = 0; // Reset points for teams with less than 2 athletes
+			// 	}
+			// 	// Implement additional logic based on specific requirements
+			// });
+
+			// // Filter out teams with no athletes or specific conditions if needed
+			// const filteredTeams = teams.filter(team => team.athletes.length >= 2);
+
+			// return filteredTeams;
+		}
+		
+		// Calculate points for a single athlete
+		function calculatePointsForRow(row) {
+		const combinedTime = calculateCombinedTime(row['First Run'], row['Second Run'], row['Combined Time']);
+
+		// Simple scoring: Lower time gets higher points (80 - rank)
+		// Assuming lower time means better performance
+		const rank = calculateRank(combinedTime);
+
+		// Cap the points at 0 if they exceed 80
+		return rank > 80 ? 0 : rank;
+		}
+		
+		// Function to calculate combined time
+		function calculateCombinedTime(firstRun, secondRun, combinedTime) {
+		const times = [firstRun, secondRun, combinedTime];
+		const inSeconds = times.map(timeToSeconds);
+		return Math.min(...inSeconds);
+		}
+
+		// Function to convert time to seconds
+		function timeToSeconds(time) {
+		const [minutes, seconds] = time.split(':').map(Number);
+		return minutes * 60 + seconds;
+		}
+
+		// Function to calculate rank based on time
+		function calculateRank(combinedTimeInSeconds) {
+		// Assuming a simple ranking system where the lowest time gets the highest rank (80 - rank)
+		return 80 - Math.floor(combinedTimeInSeconds / 60); // Award points based on minutes
+		}
+
+		// Display the results in the '#teamRankings' section
+		function displayResults(teams) {
+			const teamRankings = document.getElementById('teamRankings');
+
+			// Clear any previous content in the teamRankings section
+			teamRankings.innerHTML = '';
+
+			teams.forEach((team, index) => {
+				const row = document.createElement('tr');
+				row.innerHTML = `
+				<td>${index + 1}</td>
+				<td>${team.name}</td>
+				<td>${team.totalPoints}</td>
+				`;
+				teamRankings.appendChild(row);
+
+				// Additional display for team members (optional)
+				team.athletes.forEach(athlete => {
+				const athleteRow = document.createElement('tr');
+				athleteRow.innerHTML = `
+					<td colspan="2">Athlete: ${athlete['Athlete Name']}</td>
+					<td>${athlete.points}</td>
+				`;
+				teamRankings.appendChild(athleteRow);
+				});
+			});
+		}
+
 	});
 	</script>
 </body>
