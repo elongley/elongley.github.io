@@ -1,1 +1,92 @@
-SOD TEAM SCORES
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Team Scores Ranking</title>
+  <!-- Link Bootstrap CSS -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+</head>
+<body>
+
+  <div class="container mt-5">
+    <h1>Team Scores Ranking</h1>
+
+    <!-- File Upload Section -->
+    <div class="mb-3">
+      <label for="boysFileInput">Upload Boys' CSV file:</label>
+      <input type="file" class="form-control-file" id="boysFileInput">
+      <small class="form-text text-muted">Please upload the CSV file for boys.</small>
+    </div>
+
+    <div class="mb-3">
+      <label for="girlsFileInput">Upload Girls' CSV file:</label>
+      <input type="file" class="form-control-file" id="girlsFileInput">
+      <small class="form-text text-muted">Please upload the CSV file for girls.</small>
+    </div>
+
+    <!-- Display Results Section -->
+    <div id="results" class="mt-4">
+      <h2>Team Rankings</h2>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Team Name</th>
+            <th>Total Points</th>
+          </tr>
+        </thead>
+        <tbody id="teamRankings">
+          <!-- Display the team rankings here -->
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- Link Bootstrap JS (optional for certain Bootstrap features) -->
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <!-- Your JavaScript code for handling file uploads and processing results will go here -->
+  <script>
+	  document.addEventListener('DOMContentLoaded', function () {
+	  // Boys' CSV file upload
+	  document.getElementById('boysFileInput').addEventListener('change', function (event) {
+		const boysFile = event.target.files[0];
+		handleBoysFileUpload(boysFile);
+	  });
+
+	  // Girls' CSV file upload
+	  document.getElementById('girlsFileInput').addEventListener('change', function (event) {
+		const girlsFile = event.target.files[0];
+		handleGirlsFileUpload(girlsFile);
+	  });
+
+	  // Function to handle boys' file upload
+	  function handleBoysFileUpload(file) {
+		  Papa.parse(file, {
+			header: true,
+			complete: function (results) {
+			  // Access parsed CSV data for boys in results.data
+			  console.log('Boys CSV Data:', results.data);
+			  // Perform calculations or processing specific to boys' data
+			  // Update the display section or perform other necessary tasks
+			}
+		  });
+	  }
+
+	  // Function to handle girls' file upload
+	  function handleGirlsFileUpload(file) {
+		  Papa.parse(file, {
+			header: true,
+			complete: function (results) {
+			  // Access parsed CSV data for girls in results.data
+			  console.log('Girls CSV Data:', results.data);
+			  // Perform calculations or processing specific to girls' data
+			  // Update the display section or perform other necessary tasks
+			}
+		  });
+	  }
+	});
+	</script>
+</body>
+</html>
