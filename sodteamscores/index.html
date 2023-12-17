@@ -110,9 +110,6 @@
 		  // Separate data by gender
 		  const genderData = filteredData.filter(row => row['Gender'] === gender);
 
-		  // Calculate points based on the lowest combined times
-		  const points = calculatePoints(genderData);
-
 		  // Form teams based on clubs and athlete points
 		  const teams = formTeams(genderData);
 
@@ -120,13 +117,6 @@
 		  displayResults(teams);
 		}
 
-		// Calculate points based on the lowest combined times
-		function calculatePoints(data) {
-		  // Implement logic to calculate points
-		  // Assign points to athletes based on their times
-		  // Return the points for further processing
-		}
-		
 		// Form teams based on clubs and athlete points
 		function formTeams(data) {
 		  // Implement logic to form teams
