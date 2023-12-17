@@ -25,6 +25,9 @@
       <small class="form-text text-muted">Please upload the CSV file for girls.</small>
     </div>
 
+	<!-- Button to trigger calculations -->
+	<button id="calculateButton" class="btn btn-primary">Calculate</button>
+
     <!-- Display Results Section -->
     <div id="results" class="mt-4">
       <h2>Team Rankings</h2>
@@ -49,17 +52,27 @@
   <!-- Your JavaScript code for handling file uploads and processing results will go here -->
   <script>
 	  document.addEventListener('DOMContentLoaded', function () {
-	  // Boys' CSV file upload
-	  document.getElementById('boysFileInput').addEventListener('change', function (event) {
-		const boysFile = event.target.files[0];
-		handleBoysFileUpload(boysFile);
-	  });
+      // Function to handle Calculate button click
+      document.getElementById('calculateButton').addEventListener('click', function () {
+        // Call the processData function or any other functions to perform calculations and display results
+        // For example:
+        handleCalculations();
+      });
 
-	  // Girls' CSV file upload
-	  document.getElementById('girlsFileInput').addEventListener('change', function (event) {
-		const girlsFile = event.target.files[0];
-		handleGirlsFileUpload(girlsFile);
-	  });
+      // Function to handle calculations and display results
+      function handleCalculations() {
+        // Handle calculations and display of results here based on uploaded files
+        const boysFile = document.getElementById('boysFileInput').files[0];
+        const girlsFile = document.getElementById('girlsFileInput').files[0];
+
+        if (boysFile && girlsFile) {
+          // Process both boys' and girls' files
+          handleBoysFileUpload(boysFile);
+          handleGirlsFileUpload(girlsFile);
+        } else {
+          alert('Please upload both boys\' and girls\' files.');
+        }
+      }
 
 	  // Function to handle boys' file upload
 	  function handleBoysFileUpload(file) {
