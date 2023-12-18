@@ -6,11 +6,23 @@
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+  <style>
+	@media print {
+		.no-print {
+		display: none;
+		}
+		/* Define print-specific styles for specific elements
+		.print-only {
+		display: block;
+		} */
+	}
+  </style>
 </head>
 <body>
 
   <div class="container mt-5">
-    <h1>Team Scores Ranking</h1>
+<div class="no-print">
+	<h1>Team Scores Ranking</h1>
 
     <!-- File Upload Section -->
     <div class="mb-3">
@@ -26,8 +38,9 @@
     </div>
 
 	<!-- Button to trigger calculations -->
-	<button id="calculateButton" class="btn btn-primary">Calculate</button>
-
+	<button id="calculateButton" class="btn btn-primary">Calculate Team Rankings</button>
+	<button id="calculateButton2" class="btn btn-primary">Calculate Team Rankings (with Athlete Data)</button>
+</div>
     <!-- Display Results Section -->
     <div id="results" class="mt-4">
       <h2>Team Rankings</h2>
@@ -37,6 +50,7 @@
             <th>Rank</th>
             <th>Team Name</th>
             <th>Total Points</th>
+			<th>Combined Time</th>
           </tr>
         </thead>
         <tbody id="teamRankings">
@@ -52,207 +66,239 @@
   <!-- Your JavaScript code for handling file uploads and processing results will go here -->
   <script>
 	  document.addEventListener('DOMContentLoaded', function () {
+		let boysData, girlsData;
+		const clubs = {};
       // Function to handle Calculate button click
       document.getElementById('calculateButton').addEventListener('click', function () {
         // Call the processData function or any other functions to perform calculations and display results
         // For example:
-        handleCalculations();
+        handleCalculations(false);
+      });
+      // Function to handle Calculate button click
+      document.getElementById('calculateButton2').addEventListener('click', function () {
+        // Call the processData function or any other functions to perform calculations and display results
+        // For example:
+        handleCalculations(true);
       });
 
       // Function to handle calculations and display results
-      function handleCalculations() {
+      function handleCalculations(includeAthleteData) {
         // Handle calculations and display of results here based on uploaded files
         const boysFile = document.getElementById('boysFileInput').files[0];
         const girlsFile = document.getElementById('girlsFileInput').files[0];
 
         if (boysFile && girlsFile) {
+			console.log('Both files uploaded. Initiating calculations...');
           // Process both boys' and girls' files
-          handleBoysFileUpload(boysFile);
-          handleGirlsFileUpload(girlsFile);
+          handleBoysFileUpload(boysFile, includeAthleteData);
+          handleGirlsFileUpload(girlsFile, includeAthleteData);
         } else {
           alert('Please upload both boys\' and girls\' files.');
         }
       }
 
-	  // Function to handle boys' file upload
-	  function handleBoysFileUpload(file) {
-		  Papa.parse(file, {
-			header: true,
-			complete: function (results) {
-			  // Access parsed CSV data for boys in results.data
-			const boysData = results.data;
-			processData(boysData, 'Male');
-			  // Perform calculations or processing specific to boys' data
-			  // Update the display section or perform other necessary tasks
-			}
-		  });
-	  }
+		// Function to handle boys' file upload
+		function handleBoysFileUpload(file, includeAthleteData) {
+			console.log('Processing boys\' file...');
+			Papa.parse(file, {
+				header: true,
+				complete: function (results) {
+					// Access parsed CSV data for boys in results.data
+					boysData = results.data;
 
-	  // Function to handle girls' file upload
-	  function handleGirlsFileUpload(file) {
-		  Papa.parse(file, {
-			header: true,
-			complete: function (results) {
-			  // Access parsed CSV data for girls in results.data
-			const girlsData = results.data;
-			processData(girlsData, 'Female');
-			  // Perform calculations or processing specific to girls' data
-			  // Update the display section or perform other necessary tasks
-			}
-		  });
-	  }
-	  
-		// Process data for boys and girls
-		function processData(data, gender) {
-		  // Filter out rows with "DSF," "DNF," or "DSQ" in the Run columns
-		  const filteredData = data.filter(row => !['DSF', 'DNF', 'DSQ'].includes(row['Run']));
+					const filteredBoysData2 = filterData(boysData);
+					const filteredBoysData = recalculateCombinedTime(filteredBoysData2);
 
-		  // Separate data by gender
-		  const genderData = filteredData.filter(row => row['Gender'] === gender);
-
-		  // Form teams based on clubs and athlete points
-		  const teams = formTeams(genderData);
-
-		  // Display the results in the '#teamRankings' section
-		  displayResults(teams);
-		}
-
-		// Form teams based on clubs and athlete points
-		function formTeams(data) {
-		  // Implement logic to form teams
-		  // Select top athletes from each club with at least 2 athletes of each gender
-		  // Calculate team scores based on the points of selected athletes
-		  // Return the formed teams with rankings and scores
-			const clubs = {}; // Object to store club-wise data
-
-			  // Organize data by clubs
-			  data.forEach(row => {
-				const club = row['Club'];
-				if (!clubs[club]) {
-				  clubs[club] = [];
+					// Manually add a 'Gender' column and set it to 'Male' for boysData
+					filteredBoysData.forEach(row => {
+						row['Gender'] = 'Male';
+						row['Points'] = calculatePointsForRow(row, filteredBoysData);
+					});
+					boysData = filteredBoysData.sort((a, b) => a['Combined Time'] - b['Combined Time']);
+console.log("boys data", boysData);
+					if (girlsData) {
+						processData(includeAthleteData);
+					}
+				
 				}
-				clubs[club].push(row);
-			  });
-
-			  // Calculate points for each athlete and assign to clubs
-			  Object.keys(clubs).forEach(club => {
-				clubs[club].forEach(row => {
-				  row.points = calculatePointsForRow(row);
-				});
-
-				// Sort athletes in each club based on points
-				clubs[club].sort((a, b) => b.points - a.points);
-			  });
-
-			  // Form teams based on sorted athlete lists for each club
-			  const teams = [];
-			  Object.keys(clubs).forEach(club => {
-				const clubAthletes = clubs[club];
-				const team = {
-				  name: club,
-				  athletes: [],
-				  totalPoints: 0
-				};
-
-				let maleCount = 0;
-				let femaleCount = 0;
-
-				// Select top athletes with gender balance (at least 2 athletes of each gender)
-				clubAthletes.forEach(athlete => {
-				  if (athlete['Gender'] === 'Male' && maleCount < 2) {
-					team.athletes.push(athlete);
-					team.totalPoints += athlete.points;
-					maleCount++;
-				  } else if (athlete['Gender'] === 'Female' && femaleCount < 2) {
-					team.athletes.push(athlete);
-					team.totalPoints += athlete.points;
-					femaleCount++;
-				  }
-				});
-
-				teams.push(team);
-			  });
-
-			  // Sort teams based on total points
-			  teams.sort((a, b) => b.totalPoints - a.totalPoints);
-
-			  return teams;
-
-			// // Sort teams based on total points (continued)
-			// teams.sort((a, b) => b.totalPoints - a.totalPoints);
-
-			// // Refinements or additional logic as needed
-			// teams.forEach(team => {
-			// 	if (team.athletes.length < 2) {
-			// 	team.totalPoints = 0; // Reset points for teams with less than 2 athletes
-			// 	}
-			// 	// Implement additional logic based on specific requirements
-			// });
-
-			// // Filter out teams with no athletes or specific conditions if needed
-			// const filteredTeams = teams.filter(team => team.athletes.length >= 2);
-
-			// return filteredTeams;
+			});
 		}
-		
-		// Calculate points for a single athlete
-		function calculatePointsForRow(row) {
-		const combinedTime = calculateCombinedTime(row['First Run'], row['Second Run'], row['Combined Time']);
 
-		// Simple scoring: Lower time gets higher points (80 - rank)
-		// Assuming lower time means better performance
-		const rank = calculateRank(combinedTime);
+		// Function to handle girls' file upload
+		function handleGirlsFileUpload(file, includeAthleteData) {
+			console.log('Processing girls\' file...');
+			Papa.parse(file, {
+				header: true,
+				complete: function (results) {
+					// Access parsed CSV data for girls in results.data
+					girlsData = results.data;
 
-		// Cap the points at 0 if they exceed 80
-		return rank > 80 ? 0 : rank;
+					const filteredGirlsData2 = filterData(girlsData);
+					const filteredGirlsData = recalculateCombinedTime(filteredGirlsData2);
+
+					// Manually add a 'Gender' column and set it to 'Female' for girlsData
+					filteredGirlsData.forEach(row => {
+						row['Gender'] = 'Female';
+						row['Points'] = calculatePointsForRow(row, filteredGirlsData);
+					});
+
+					girlsData = filteredGirlsData.sort((a, b) => a['Combined Time'] - b['Combined Time']);
+console.log("girls data", girlsData);
+						if (boysData) {
+							processData(includeAthleteData);
+						}
+				}
+			});
 		}
-		
-		// Function to calculate combined time
-		function calculateCombinedTime(firstRun, secondRun, combinedTime) {
-		const times = [firstRun, secondRun, combinedTime];
-		const inSeconds = times.map(timeToSeconds);
-		return Math.min(...inSeconds);
+	  
+		function recalculateCombinedTime(data) {
+			for (let i = 0; i < data.length; i++) {
+				const firstRun = parseFloat(data[i]['First Run']);
+				const secondRun = parseFloat(data[i]['Second Run']);
+				
+				if (!isNaN(firstRun) && !isNaN(secondRun)) {
+					const combinedTimeSeconds = firstRun + secondRun;
+					data[i]['Combined Time'] = combinedTimeSeconds.toFixed(2);
+				}
+			}
+			return data;
+		}
+
+		// Function to calculate points for a single athlete based on their combined time within the same gender
+		function calculatePointsForRow(row, data) {
+			const combinedTime = row['Combined Time'];
+
+			// Extract combined times for the same gender
+			const combinedTimesOfGender = data.map(athlete => athlete['Combined Time']);
+
+			// Sort the combined times in ascending order
+			combinedTimesOfGender.sort((a, b) => a - b);
+
+			// Find the rank of the athlete's time
+			const rank = combinedTimesOfGender.indexOf(combinedTime) + 1;
+
+			// Calculate points based on rank
+			const points = 81 - rank; // 80 for the fastest time, 79 for the second fastest, and so on
+
+			return points > 0 ? points : 0; // Ensure points are not negative
 		}
 
 		// Function to convert time to seconds
 		function timeToSeconds(time) {
-		const [minutes, seconds] = time.split(':').map(Number);
-		return minutes * 60 + seconds;
+			if (time.includes(':')) {
+				const [minutes, seconds] = time.split(':').map(Number);
+				return minutes * 60 + seconds;
+			} else {
+				return parseFloat(time);
+			}
 		}
 
-		// Function to calculate rank based on time
-		function calculateRank(combinedTimeInSeconds) {
-		// Assuming a simple ranking system where the lowest time gets the highest rank (80 - rank)
-		return 80 - Math.floor(combinedTimeInSeconds / 60); // Award points based on minutes
+
+		// Process both boys' and girls' data
+		function processData(includeAthleteData) {
+		console.log('Processing data for both boys and girls...');
+				const combinedData = boysData.concat(girlsData);
+				const teams = formTeams(combinedData);
+				displayResults(teams, includeAthleteData);
 		}
 
-		// Display the results in the '#teamRankings' section
-		function displayResults(teams) {
-			const teamRankings = document.getElementById('teamRankings');
-
-			// Clear any previous content in the teamRankings section
-			teamRankings.innerHTML = '';
-
-			teams.forEach((team, index) => {
-				const row = document.createElement('tr');
-				row.innerHTML = `
-				<td>${index + 1}</td>
-				<td>${team.name}</td>
-				<td>${team.totalPoints}</td>
-				`;
-				teamRankings.appendChild(row);
-
-				// Additional display for team members (optional)
-				team.athletes.forEach(athlete => {
-				const athleteRow = document.createElement('tr');
-				athleteRow.innerHTML = `
-					<td colspan="2">Athlete: ${athlete['Athlete Name']}</td>
-					<td>${athlete.points}</td>
-				`;
-				teamRankings.appendChild(athleteRow);
-				});
+		// Function to filter data by gender and valid race times
+		function filterData(data) {
+			return data.filter(row => {
+				return row['Combined Time'] !== '';
 			});
 		}
+
+
+
+      // Function to form teams based on combined data
+      function formTeams(data) {
+        console.log('Forming teams...');
+        const teams = []; // Store formed teams here (modify this part)
+        
+		// Organize data by clubs
+		const clubs = {};
+		data.forEach(row => {
+			const club = row['Club'];
+			if (!clubs[club]) {
+			clubs[club] = [];
+			}
+			clubs[club].push(row);
+		});
+
+		// Logic to form teams based on clubs
+		Object.keys(clubs).forEach(club => {
+			const clubData = clubs[club];
+			const sortedByPoints = clubData.sort((a, b) => b.Points - a.Points); // Sort athletes by points
+
+			// Create a team and add athletes with gender balance (at least 2 of each gender)
+			const team = {
+			name: club,
+			athletes: [],
+			totalPoints: 0,
+			totalTime: 0
+			};
+			let maleCount = 0;
+			let femaleCount = 0;
+
+			sortedByPoints.forEach(athlete => {
+			if (maleCount < 8 && athlete['Gender'] === 'Male' && maleCount+femaleCount < 10) {
+				team.athletes.push(athlete);
+				team.totalPoints += athlete.Points;
+				team.totalTime += parseFloat(athlete['Combined Time']);
+				maleCount++;
+			} else if (femaleCount < 8 && athlete['Gender'] === 'Female' && maleCount+femaleCount < 10) {
+				team.athletes.push(athlete);
+				team.totalPoints += athlete.Points;
+				team.totalTime += parseFloat(athlete['Combined Time']);
+				femaleCount++;
+			}
+			});
+console.log("Team: ", team);
+			teams.push(team);
+		});
+
+		// Sort teams based on total points
+		teams.sort((a, b) => b.totalPoints - a.totalPoints);
+        
+        return teams;
+      }
+
+      // Function to display results in the team rankings section
+      function displayResults(teams, includeAthleteData) {
+        console.log('Displaying results...');
+        const teamRankings = document.getElementById('teamRankings');
+
+        // Clear any previous content in the teamRankings section
+        teamRankings.innerHTML = '';
+
+        // Display teams in the table
+        teams.forEach((team, index) => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td><b>${index + 1}</b></td>
+            <td><b>${team.name}</b></td>
+            <td><b>${team.totalPoints}</b></td>
+			<td><b>${team.totalTime.toFixed(2)}</b></td>
+			<td></td>
+			`;
+         	teamRankings.appendChild(row);
+
+			if (includeAthleteData){
+				// Display athletes' details under each team
+				team.athletes.forEach((athlete) => {
+					const row = document.createElement('tr');
+					row.innerHTML = `
+						<td></td>
+						<td>${athlete['Athlete Name']}</td>
+						<td>${athlete.Points}</td>
+						<td>${athlete['Combined Time']}</td>
+					`;
+					teamRankings.appendChild(row);
+				});
+			}
+        });
+      }
 
 	});
 	</script>
