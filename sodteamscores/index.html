@@ -205,7 +205,7 @@ console.log("girls data", girlsData);
 		// Function to filter data by gender and valid race times
 		function filterData(data) {
 			return data.filter(row => {
-				return row['Combined Time'] !== '';
+				return row['Bib'] !== '' && row['Combined Time'] !== '';
 			});
 		}
 
